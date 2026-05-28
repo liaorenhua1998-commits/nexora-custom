@@ -1,0 +1,12 @@
+[Unit]
+Description=Run Nexora PostgreSQL backups daily
+
+[Timer]
+OnCalendar=*-*-* 03:00:00
+RandomizedDelaySec=15m
+Persistent=true
+Unit=nexora-backup.service
+
+[Install]
+WantedBy=timers.target
+

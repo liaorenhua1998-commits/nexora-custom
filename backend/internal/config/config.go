@@ -150,6 +150,7 @@ type GeminiTierQuotaConfig struct {
 }
 
 type UpdateConfig struct {
+	GitHubRepo string `mapstructure:"github_repo"`
 	// ProxyURL 用于访问 GitHub 的代理地址
 	// 支持 http/https/socks5/socks5h 协议
 	// 例如: "http://127.0.0.1:7890", "socks5://127.0.0.1:1080"
@@ -1422,6 +1423,8 @@ func load(allowMissingJWTSecret bool) (*Config, error) {
 	cfg.Log.Environment = strings.TrimSpace(cfg.Log.Environment)
 	cfg.Log.StacktraceLevel = strings.ToLower(strings.TrimSpace(cfg.Log.StacktraceLevel))
 	cfg.Log.Output.FilePath = strings.TrimSpace(cfg.Log.Output.FilePath)
+	cfg.Update.GitHubRepo = strings.TrimSpace(cfg.Update.GitHubRepo)
+	cfg.Update.ProxyURL = strings.TrimSpace(cfg.Update.ProxyURL)
 	cfg.Gateway.ForcedCodexInstructionsTemplateFile = strings.TrimSpace(cfg.Gateway.ForcedCodexInstructionsTemplateFile)
 	if cfg.Gateway.ForcedCodexInstructionsTemplateFile != "" {
 		content, err := os.ReadFile(cfg.Gateway.ForcedCodexInstructionsTemplateFile)
@@ -1716,6 +1719,10 @@ func setDefaults() {
 	viper.SetDefault("pricing.update_interval_hours", 24)
 	viper.SetDefault("pricing.hash_check_interval_minutes", 10)
 
+	// Online updates
+	viper.SetDefault("update.github_repo", "liaorenhua1998-commits/nexora-custom")
+	viper.SetDefault("update.proxy_url", "")
+
 	// Timezone (default to Asia/Shanghai for Chinese users)
 	viper.SetDefault("timezone", "Asia/Shanghai")
 
@@ -1929,6 +1936,9 @@ func (c *Config) Validate() error {
 	jwtSecret := strings.TrimSpace(c.JWT.Secret)
 	if jwtSecret == "" {
 		return fmt.Errorf("jwt.secret is required")
+	}
+	if err := ValidateGitHubRepo(c.Update.GitHubRepo); err != nil {
+		return fmt.Errorf("update.github_repo invalid: %w", err)
 	}
 	// NOTE: 按 UTF-8 编码后的字节长度计算。
 	// 选择 bytes 而不是 rune 计数，确保二进制/随机串的长度语义更接近“熵”而非“字符数”。
@@ -2876,6 +2886,36 @@ func ValidateFrontendRedirectURL(raw string) error {
 	}
 	if u.Fragment != "" {
 		return fmt.Errorf("must not include fragment")
+	}
+	return nil
+}
+
+// ValidateGitHubRepo validates a GitHub repository path in owner/repo form.
+func ValidateGitHubRepo(raw string) error {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return fmt.Errorf("empty repository")
+	}
+	if strings.ContainsAny(raw, "\r\n\t ") {
+		return fmt.Errorf("must not contain whitespace")
+	}
+	parts := strings.Split(raw, "/")
+	if len(parts) != 2 {
+		return fmt.Errorf("must use owner/repo format")
+	}
+	for _, part := range parts {
+		if part == "" || part == "." || part == ".." {
+			return fmt.Errorf("invalid path segment")
+		}
+		for _, r := range part {
+			if (r >= 'a' && r <= 'z') ||
+				(r >= 'A' && r <= 'Z') ||
+				(r >= '0' && r <= '9') ||
+				r == '-' || r == '_' || r == '.' {
+				continue
+			}
+			return fmt.Errorf("unsupported character %q", r)
+		}
 	}
 	return nil
 }

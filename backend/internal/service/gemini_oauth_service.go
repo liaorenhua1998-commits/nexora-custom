@@ -84,7 +84,7 @@ func (s *GeminiOAuthService) GetOAuthConfig() *GeminiOAuthCapabilities {
 	// AI Studio OAuth is only enabled when the operator configures a custom OAuth client.
 	clientID := strings.TrimSpace(s.cfg.Gemini.OAuth.ClientID)
 	clientSecret := strings.TrimSpace(s.cfg.Gemini.OAuth.ClientSecret)
-	enabled := clientID != "" && clientSecret != "" && clientID != geminicli.GeminiCLIOAuthClientID
+	enabled := clientID != "" && clientSecret != ""
 
 	return &GeminiOAuthCapabilities{
 		AIStudioOAuthEnabled: enabled,
@@ -153,7 +153,7 @@ func (s *GeminiOAuthService) GenerateAuthURL(ctx context.Context, proxyID *int64
 		return nil, err
 	}
 
-	isBuiltinClient := effectiveCfg.ClientID == geminicli.GeminiCLIOAuthClientID
+	isBuiltinClient := strings.TrimSpace(s.cfg.Gemini.OAuth.ClientID) == "" && strings.TrimSpace(s.cfg.Gemini.OAuth.ClientSecret) == ""
 
 	// AI Studio OAuth requires a user-provided OAuth client (built-in Gemini CLI client is scope-restricted).
 	if oauthType == "ai_studio" && isBuiltinClient {
@@ -477,15 +477,14 @@ func (s *GeminiOAuthService) ExchangeCode(ctx context.Context, input *GeminiExch
 
 	// If the session was created for AI Studio OAuth, ensure a custom OAuth client is configured.
 	if oauthType == "ai_studio" {
-		effectiveCfg, err := geminicli.EffectiveOAuthConfig(geminicli.OAuthConfig{
+		if _, err := geminicli.EffectiveOAuthConfig(geminicli.OAuthConfig{
 			ClientID:     s.cfg.Gemini.OAuth.ClientID,
 			ClientSecret: s.cfg.Gemini.OAuth.ClientSecret,
 			Scopes:       s.cfg.Gemini.OAuth.Scopes,
-		}, "ai_studio")
-		if err != nil {
+		}, "ai_studio"); err != nil {
 			return nil, err
 		}
-		isBuiltinClient := effectiveCfg.ClientID == geminicli.GeminiCLIOAuthClientID
+		isBuiltinClient := strings.TrimSpace(s.cfg.Gemini.OAuth.ClientID) == "" && strings.TrimSpace(s.cfg.Gemini.OAuth.ClientSecret) == ""
 		if isBuiltinClient {
 			return nil, fmt.Errorf("AI Studio OAuth requires a custom OAuth Client. Please use an AI Studio API Key account, or configure GEMINI_OAUTH_CLIENT_ID / GEMINI_OAUTH_CLIENT_SECRET and re-authorize")
 		}

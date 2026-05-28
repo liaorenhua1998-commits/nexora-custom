@@ -25,7 +25,8 @@ const (
 	UserInfoURL  = "https://www.googleapis.com/oauth2/v2/userinfo"
 
 	// Antigravity OAuth 客户端凭证
-	ClientID = "1071006060591-tmhssin2h21lcre235vtolojh4g403ep.apps.googleusercontent.com"
+	ClientID                    = ""
+	AntigravityOAuthClientIDEnv = "ANTIGRAVITY_OAUTH_CLIENT_ID"
 
 	// AntigravityOAuthClientSecretEnv 是 Antigravity OAuth client_secret 的环境变量名。
 	AntigravityOAuthClientSecretEnv = "ANTIGRAVITY_OAUTH_CLIENT_SECRET"
@@ -70,7 +71,8 @@ var (
 )
 
 // defaultClientSecret 可通过环境变量 ANTIGRAVITY_OAUTH_CLIENT_SECRET 配置
-var defaultClientSecret = "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"
+var defaultClientID string
+var defaultClientSecret string
 
 func init() {
 	// 从环境变量读取版本号，未设置则使用默认值
@@ -143,6 +145,16 @@ func getClientSecret() (string, error) {
 		return v, nil
 	}
 	return "", infraerrors.Newf(http.StatusBadRequest, "ANTIGRAVITY_OAUTH_CLIENT_SECRET_MISSING", "missing antigravity oauth client_secret; set %s", AntigravityOAuthClientSecretEnv)
+}
+
+func getClientID() (string, error) {
+	if v := strings.TrimSpace(defaultClientID); v != "" {
+		return v, nil
+	}
+	if v := strings.TrimSpace(os.Getenv(AntigravityOAuthClientIDEnv)); v != "" {
+		return v, nil
+	}
+	return "", infraerrors.Newf(http.StatusBadRequest, "ANTIGRAVITY_OAUTH_CLIENT_ID_MISSING", "missing antigravity oauth client_id; set %s", AntigravityOAuthClientIDEnv)
 }
 
 // BaseURLs 定义 Antigravity API 端点（与 Antigravity-Manager 保持一致）
@@ -393,9 +405,13 @@ func base64URLEncode(data []byte) string {
 }
 
 // BuildAuthorizationURL 构建 Google OAuth 授权 URL
-func BuildAuthorizationURL(state, codeChallenge string) string {
+func BuildAuthorizationURL(state, codeChallenge string) (string, error) {
+	clientID, err := getClientID()
+	if err != nil {
+		return "", err
+	}
 	params := url.Values{}
-	params.Set("client_id", ClientID)
+	params.Set("client_id", clientID)
 	params.Set("redirect_uri", RedirectURI)
 	params.Set("response_type", "code")
 	params.Set("scope", Scopes)
@@ -406,5 +422,5 @@ func BuildAuthorizationURL(state, codeChallenge string) string {
 	params.Set("prompt", "consent")
 	params.Set("include_granted_scopes", "true")
 
-	return fmt.Sprintf("%s?%s", AuthorizeURL, params.Encode())
+	return fmt.Sprintf("%s?%s", AuthorizeURL, params.Encode()), nil
 }

@@ -874,6 +874,35 @@ func TestValidateFrontendRedirectURL(t *testing.T) {
 	}
 }
 
+func TestValidateGitHubRepo(t *testing.T) {
+	valid := []string{
+		"Wei-Shaw/sub2api",
+		"liaorenhua1998-commits/nexora-custom",
+		"owner.name/repo_name",
+	}
+	for _, input := range valid {
+		if err := ValidateGitHubRepo(input); err != nil {
+			t.Fatalf("ValidateGitHubRepo(%q) error: %v", input, err)
+		}
+	}
+
+	invalid := []string{
+		"",
+		"owner",
+		"owner/repo/extra",
+		"https://github.com/owner/repo",
+		"owner /repo",
+		"owner/repo\nnext",
+		"../repo",
+		"owner/",
+	}
+	for _, input := range invalid {
+		if err := ValidateGitHubRepo(input); err == nil {
+			t.Fatalf("ValidateGitHubRepo(%q) should reject invalid repository", input)
+		}
+	}
+}
+
 func TestWarnIfInsecureURL(t *testing.T) {
 	warnIfInsecureURL("test", "http://example.com")
 	warnIfInsecureURL("test", "bad://url")

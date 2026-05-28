@@ -6440,6 +6440,7 @@ export default {
   version: {
     currentVersion: 'Current Version',
     latestVersion: 'Latest Version',
+    updateSource: 'Update source',
     upToDate: "You're running the latest version.",
     updateAvailable: 'A new version is available!',
     releaseNotes: 'Release Notes',

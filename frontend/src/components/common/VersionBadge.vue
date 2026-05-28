@@ -111,6 +111,9 @@
                       : t('version.upToDate')
                   }}
                 </p>
+                <p v-if="updateRepository" class="mt-1 text-xs text-gray-400 dark:text-dark-500">
+                  {{ t('version.updateSource') }}: {{ updateRepository }}
+                </p>
               </div>
 
               <!-- Priority 1: Update error (must check before hasUpdate) -->
@@ -408,6 +411,7 @@ const latestVersion = computed(() => appStore.latestVersion)
 const hasUpdate = computed(() => appStore.hasUpdate)
 const releaseInfo = computed(() => appStore.releaseInfo)
 const buildType = computed(() => appStore.buildType)
+const updateRepository = computed(() => appStore.updateRepository)
 
 // Update process states (local to this component)
 const updating = ref(false)
