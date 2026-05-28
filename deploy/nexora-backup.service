@@ -1,0 +1,22 @@
+[Unit]
+Description=Nexora PostgreSQL backup job
+Wants=docker.service
+After=docker.service network-online.target
+
+[Service]
+Type=oneshot
+User=nexora
+Group=nexora
+WorkingDirectory=/opt/nexora/deploy
+Environment=ENV_FILE=/opt/nexora/deploy/runtime/.env.production
+Environment=COMPOSE_FILE=/opt/nexora/deploy/docker-compose.prod.yml
+Environment=BACKUP_DIR=/opt/nexora/deploy/backups
+Environment=BACKUP_RETENTION_DAYS=7
+ExecStart=/opt/nexora/deploy/backup-postgres.sh
+Nice=10
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/nexora/deploy/backups /opt/nexora/deploy/runtime
+

@@ -1,0 +1,41 @@
+<template>
+  <div class="space-y-4">
+    <AuthOAuthButton :disabled="disabled" :label="t('auth.linuxdo.signIn')" @click="startLogin">
+      <template #icon>
+        <span class="inline-flex h-5 w-5 items-center justify-center rounded-full bg-[#f97316] text-[11px] font-bold text-white">
+          L
+        </span>
+      </template>
+    </AuthOAuthButton>
+
+    <AuthOAuthDivider v-if="showDivider" :label="t('auth.oauthOrContinue')" />
+  </div>
+</template>
+
+<script setup lang="ts">
+import { useRoute } from 'vue-router'
+import { useI18n } from 'vue-i18n'
+import AuthOAuthButton from './AuthOAuthButton.vue'
+import AuthOAuthDivider from './AuthOAuthDivider.vue'
+import { resolveAffiliateReferralCode, storeOAuthAffiliateCode } from '@/utils/oauthAffiliate'
+
+const props = withDefaults(defineProps<{
+  disabled?: boolean
+  affCode?: string
+  showDivider?: boolean
+}>(), {
+  showDivider: true
+})
+
+const route = useRoute()
+const { t } = useI18n()
+
+function startLogin(): void {
+  const redirectTo = (route.query.redirect as string) || '/dashboard'
+  storeOAuthAffiliateCode(resolveAffiliateReferralCode(props.affCode, route.query.aff, route.query.aff_code))
+  const apiBase = (import.meta.env.VITE_API_BASE_URL as string | undefined) || '/api/v1'
+  const normalized = apiBase.replace(/\/$/, '')
+  const startURL = `${normalized}/auth/oauth/linuxdo/start?redirect=${encodeURIComponent(redirectTo)}`
+  window.location.href = startURL
+}
+</script>

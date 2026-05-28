@@ -1,0 +1,13 @@
+[Unit]
+Description=Run Nexora production health monitor every 2 minutes
+
+[Timer]
+OnBootSec=2m
+OnUnitActiveSec=2m
+RandomizedDelaySec=20s
+Persistent=true
+Unit=nexora-monitor.service
+
+[Install]
+WantedBy=timers.target
+
